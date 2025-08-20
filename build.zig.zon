@@ -2,7 +2,7 @@
     .name = .named_fmt,
     .version = "0.1.0",
     .fingerprint = 0xe80c84551a73681d, // Changing this has security and trust implications.
-    .minimum_zig_version = "0.15.0-dev.913+9ef4bdf23",
+    .minimum_zig_version = "0.15.0",
     .dependencies = .{},
     .paths = .{
         "build.zig",

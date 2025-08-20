@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn writerPrint(writer: anytype, comptime fmt: []const u8, args: anytype) !void {
+pub fn writerPrint(writer: *std.io.Writer, comptime fmt: []const u8, args: anytype) !void {
     const Params = @TypeOf(args);
     const params_tinfo = @typeInfo(Params);
     if (params_tinfo != .@"struct") @compileError("Params should be named-struct");
@@ -28,17 +28,13 @@ pub fn writerPrint(writer: anytype, comptime fmt: []const u8, args: anytype) !vo
 }
 
 pub fn allocPrint(alloc: std.mem.Allocator, comptime fmt: []const u8, args: anytype) ![]u8 {
-    var buf = std.ArrayList(u8).init(alloc);
-    defer buf.deinit();
-    const writer = buf.writer();
-    try writerPrint(writer, fmt, args);
+    var buf = std.io.Writer.Allocating.init(alloc);
+    try writerPrint(&buf.writer, fmt, args);
     return buf.toOwnedSlice();
 }
 pub fn allocPrintSentinel(alloc: std.mem.Allocator, comptime sentinel: u8, comptime fmt: []const u8, args: anytype) ![:sentinel]u8 {
-    var buf = std.ArrayList(u8).init(alloc);
-    defer buf.deinit();
-    const writer = buf.writer();
-    try writerPrint(writer, fmt, args);
+    var buf = std.io.Writer.Allocating.init(alloc);
+    try writerPrint(&buf.writer, fmt, args);
     return buf.toOwnedSliceSentinel(sentinel);
 }
 
@@ -62,14 +58,13 @@ const testing = struct {
     };
 };
 test "writerPrint" {
-    var buf = std.ArrayList(u8).init(std.testing.allocator);
+    var buf = std.io.Writer.Allocating.init(std.testing.allocator);
     defer buf.deinit();
-    const writer = buf.writer();
 
     inline for (testing.cases) |c| {
         defer buf.clearRetainingCapacity();
-        try writerPrint(writer, c[0], c[1]);
-        try std.testing.expectEqualStrings(c[2], buf.items);
+        try writerPrint(&buf.writer, c[0], c[1]);
+        try std.testing.expectEqualStrings(c[2], buf.written());
     }
 }
 
